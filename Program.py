@@ -44,11 +44,13 @@ BASE_URL = "https://www.google.com/search"
 def safely_search_and_save(n, queries, date):
     """Safely searches google for the first n results for each query
     using the specified date in the search. Results are saved afterwards."""
-    for query in queries:
+    count = len(queries)
+    for i in range(count):
+        query = queries[i]
         search_and_save(n, query, date)
-        logging.info("Waiting a few seconds...")
-        logging.info("")
-        wait_random()
+        if i + i < count:
+            logging.info("\nWaiting a few seconds...\n")
+            wait_random()
 
 
 def search_and_save(n, query, date):
@@ -58,7 +60,7 @@ def search_and_save(n, query, date):
     search_term = get_search_string(query, date)
     results = get_first_n_results(n, search_term)
     full_results = map(lambda r :
-        (search_term, query, date.strftime("%Y %m"), queried_on.strftime("%Y %m"), r[0], r[1], checked_url(r[2])),
+        (search_term, date.strftime("%Y %m"), queried_on.strftime("%Y %m"), r[0], r[1], checked_url(r[2])),
         results)
     logging.info("Saving results")
     append_results(full_results)
@@ -161,14 +163,14 @@ def append_results(results):
     file = open_when_free(OUTPUT_FILENAME, 'a')
     for result in results:
         logging.debug(result)
-        file.write('%s,%s,%s,%s,%s,"%s",=HYPERLINK("%s")\n' % result)
+        file.write('%s,%s,%s,%s,"%s",=HYPERLINK("%s")\n' % result)
     file.close()
 
 
 def create_results_file():
     """Creates new results file with headers."""
     file = open_when_free(OUTPUT_FILENAME, 'w')
-    file.write("QueryTotal,QueryRFP,QueryDate,QueriedOn,Rank,Title,Url\n")
+    file.write("QueryTotal,QueryDate,QueriedOn,Rank,Title,Url\n")
     file.close()
 
 
@@ -181,7 +183,7 @@ def read_queries():
 
 def get_search_string(query, date):
     """Given a query and date, this returns a string 'RFP "{query}" {date}'."""
-    return 'RFP "%s" %s' % (query, date.strftime("%B %Y"))
+    return '%s %s' % (query, date.strftime("%B %Y"))
 
 
 def get_date():
@@ -251,8 +253,7 @@ if __name__ == "__main__":
     # Introduction
     print("Google Automated Search")
     print("By David Button")
-    print("For Ian")
-    print("")
+    print("For Ian\n")
 
     # Get manual or automatic date
     date = get_date()
@@ -264,3 +265,6 @@ if __name__ == "__main__":
 
     # Safely search and save the results
     safely_search_and_save(N_RESULTS, rfp_queries, date)
+
+    # Finish
+    logging.info("\nSearching complete!")
