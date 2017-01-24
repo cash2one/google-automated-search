@@ -6,6 +6,7 @@ import os.path
 import random
 import requests
 import time
+import urllib
 from fake_useragent import UserAgent
 
 # Setup logging for console display
@@ -121,8 +122,6 @@ def get_random_headers():
 
 def checked_url(string):
     """Checks for valid URL and returns result."""
-    if "," in string:
-        return "ERROR"
     if len(string) > 255:
         return "ERROR"
     return string
@@ -130,12 +129,22 @@ def checked_url(string):
 
 def clean_url(href):
     """Cleans a href found from the result item heading."""
+    logging.info("before: " + href)
+    href = urllib.parse.unquote(href)
     if href.startswith("/search"):
         return None
-    start = href.find("http")
-    href = href[start:]  # remove preceding '/url?q=' , etc
-    param_start = href.find("&sa")
-    href = href[:param_start]  # remove proceeding parameters
+    query_start = href.find("?")
+    url_start = href.find("?url=")
+    url_type = href.startswith("/url")
+    if url_start >= 0:
+        href = href[url_start + 5:]
+        if url_type:
+            param_start = href.find("&")
+            href = href[:param_start]
+
+    #href = href[start:]  # remove preceding '/url?q=' , etc
+    logging.info("after: " + href)
+    logging.info("")
     return href
 
 
@@ -163,7 +172,7 @@ def append_results(results):
     file = open_when_free(OUTPUT_FILENAME, 'a')
     for result in results:
         logging.debug(result)
-        file.write('%s,%s,%s,%s,"%s",=HYPERLINK("%s")\n' % result)
+        file.write('%s,%s,%s,%s,"%s","=HYPERLINK(""%s"")"\n' % result)
     file.close()
 
 
