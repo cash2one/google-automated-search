@@ -61,7 +61,7 @@ def search_and_save(n, query, date):
     search_term = get_search_string(query, date)
     results = get_first_n_results(n, search_term)
     full_results = map(lambda r :
-        (search_term, date.strftime("%Y %m"), queried_on.strftime("%Y %m"), r[0], r[1], checked_url(r[2])),
+        (search_term, date.strftime("%Y %m"), queried_on.strftime("%Y %m"), r[0], r[1], r[2], checked_url(r[3])),
         results)
     logging.info("Saving results")
     append_results(full_results)
@@ -86,8 +86,10 @@ def get_first_n_results(n, search_term):
         title = heading_data.getText()
         raw_url = heading_data.get("href")
         url = clean_url(raw_url)
+        summary = get_summary(c)
+        print(summary)
         if title and url:
-            results.append((len(results)+1, title, url))
+            results.append((len(results)+1, title, summary, url))
         if len(results) == n:
             break
     return results
@@ -125,6 +127,16 @@ def checked_url(string):
     if len(string) > 255:
         return "ERROR"
     return string
+
+
+def get_summary(container):
+    """Gets the summary of a Google result"""
+    summary = None
+    res = container.select(".st")
+    if len(res) > 0:
+        summary = res[0].getText()
+        summary = summary.replace("\n", " ")
+    return summary
 
 
 def clean_url(href):
@@ -172,14 +184,14 @@ def append_results(results):
     file = open_when_free(OUTPUT_FILENAME, 'a')
     for result in results:
         logging.debug(result)
-        file.write('%s,%s,%s,%s,"%s","=HYPERLINK(""%s"")"\n' % result)
+        file.write('%s,%s,%s,%s,"%s","%s","=HYPERLINK(""%s"")"\n' % result)
     file.close()
 
 
 def create_results_file():
     """Creates new results file with headers."""
     file = open_when_free(OUTPUT_FILENAME, 'w')
-    file.write("QueryTotal,QueryDate,QueriedOn,Rank,Title,Url\n")
+    file.write("QueryTotal,QueryDate,QueriedOn,Rank,Title,Summary,Url\n")
     file.close()
 
 
