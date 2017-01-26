@@ -49,7 +49,7 @@ def safely_search_and_save(n, queries, date):
     for i in range(count):
         query = queries[i]
         search_and_save(n, query, date)
-        if i + i < count:
+        if i + 1 < count:
             logging.info("\nWaiting a few seconds...\n")
             wait_random()
 
@@ -87,7 +87,6 @@ def get_first_n_results(n, search_term):
         raw_url = heading_data.get("href")
         url = clean_url(raw_url)
         summary = get_summary(c)
-        print(summary)
         if title and url:
             results.append((len(results)+1, title, summary, url))
         if len(results) == n:
@@ -98,14 +97,10 @@ def get_first_n_results(n, search_term):
 def search(url, params=None):
     """Searches a url with given query-string parameters and returns the html."""
     full_url = url
-    if params is not None:
-        param_key_values = list(params.items())
-        query_string = "".join(map(lambda p: "&%s=%s" % p, param_key_values))
-        if len(query_string) != 0:
-            query_string = "?" + query_string
-        full_url = url + query_string
-    logging.debug("full url : %s" % full_url)
-    response = requests.get(full_url, headers=get_random_headers())
+    if params is None:
+        params = {}
+    response = requests.get(full_url, headers=get_random_headers(), params=params)
+    logging.debug("full url : %s" % response.url)
     response.raise_for_status()
     return response.text
 
@@ -141,22 +136,15 @@ def get_summary(container):
 
 def clean_url(href):
     """Cleans a href found from the result item heading."""
-    logging.info("before: " + href)
-    href = urllib.parse.unquote(href)
     if href.startswith("/search"):
         return None
-    query_start = href.find("?")
-    url_start = href.find("?url=")
-    url_type = href.startswith("/url")
+    url_start = href.find("=http")
     if url_start >= 0:
-        href = href[url_start + 5:]
-        if url_type:
-            param_start = href.find("&")
+        href = href[url_start+1:]
+        param_start = href.find("&")
+        if param_start >= 0:
             href = href[:param_start]
-
-    #href = href[start:]  # remove preceding '/url?q=' , etc
-    logging.info("after: " + href)
-    logging.info("")
+    href = urllib.parse.unquote(href)
     return href
 
 
@@ -184,8 +172,14 @@ def append_results(results):
     file = open_when_free(OUTPUT_FILENAME, 'a')
     for result in results:
         logging.debug(result)
-        file.write('%s,%s,%s,%s,"%s","%s","=HYPERLINK(""%s"")"\n' % result)
+        file.write('%s,%s,%s,%s,"%s","%s","=HYPERLINK(""%s"")"\n' %
+                   (result[0], result[1], result[2], result[3], double_quotes_result(result[4]), double_quotes_result(result[5]), result[6]))
     file.close()
+
+
+def double_quotes_result(string):
+    """Replaces a strings quotes " " with double quotes "" ""."""
+    return string.replace('"', '""')
 
 
 def create_results_file():
